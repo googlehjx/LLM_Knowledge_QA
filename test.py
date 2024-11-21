@@ -3,3 +3,4 @@ a new line
 another line
 EOF
 CRLF
+remote test
