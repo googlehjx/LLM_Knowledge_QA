@@ -4,3 +4,4 @@ another line
 EOF
 CRLF
 remote test
+local test: git push
