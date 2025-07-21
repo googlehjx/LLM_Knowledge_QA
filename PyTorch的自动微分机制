@@ -1,0 +1,64 @@
+## PyTorch的自动微分机制
+torch.autograd 是 PyTorch 的自动微分引擎，为神经网络训练提供支持。它基于计算图(Computational Graph)​​ 和动态追踪(Dynamic Tracing)​​ 构建：
+PyTorch自动微分机制详解
+PyTorch的自动微分系统(Autograd)是其核心功能，使神经网络的训练变得高效简洁。我将从原理到实践全面解释这一机制：
+
+1. 张量与梯度传播
+每个张量(tensor)包含：
+
+​data​：原始数值
+​grad​：梯度值
+​grad_fn​：创建此张量的函数引用
+​is_leaf​：是否是叶子节点（用户创建而非操作结果）
+​requires_grad​：是否需要计算梯度
+
+import torch
+
+# 创建需要跟踪梯度的张量
+x = torch.tensor([1.0], requires_grad=True)
+w = torch.tensor([2.0], requires_grad=True)
+b = torch.tensor([0.5], requires_grad=True)
+
+print(f"x: 值={x.data}, 梯度={x.grad}, 是叶节点={x.is_leaf}")
+# 输出: x: 值=tensor([1.]), 梯度=None, 是叶节点=True
+
+2. 前向传播构建计算图
+当执行运算时，PyTorch自动构建计算图：
+# 前向传播
+y = w * x       # 乘法运算
+z = y + b       # 加法运算
+loss = (z - 3)**2  # 损失函数
+
+print(f"y: grad_fn={y.grad_fn}")  # 输出: <MulBackward0 at 0x...>
+print(f"z: grad_fn={z.grad_fn}")  # 输出: <AddBackward0 at 0x...>
+print(f"loss: grad_fn={loss.grad_fn}")  # 输出: <PowBackward0 at 0x...>
+
+x → Mul → y → Add → z → Pow → loss
+       ↗         ↗
+      w         b
+
+3. 反向传播自动求导
+调用.backward()触发反向传播：
+# 反向传播
+loss.backward()
+
+# 查看梯度
+print(f"∂loss/∂x = {x.grad}")  # tensor([-2])
+print(f"∂loss/∂w = {w.grad}")  # tensor([-1])
+print(f"∂loss/∂b = {b.grad}")  # tensor([-1])
+
+梯度计算过程详解
+以上述计算为例：
+
+计算loss对自身的导数：d(loss)/d(loss) = 1
+根据链式法则逐层回传：
+
+d(loss)/d(z) = d(loss)/d(loss) * d(loss)/d(z) 
+             = 1 * 2*(z-3) = 2*(2.5-3) = 2*(-0.5) = -1
+
+d(loss)/d(y) = d(loss)/d(z) * d(z)/d(y) = -1 * 1 = -1
+
+d(loss)/d(b) = d(loss)/d(z) * d(z)/d(b) = -1 * 1 = -1
+
+d(loss)/d(x) = d(loss)/d(y) * d(y)/d(x) = -1 * w = -1 * 2 = -2
+d(loss)/d(w) = d(loss)/d(y) * d(y)/d(w) = -1 * x = -1 * 1 = -1
