@@ -3,6 +3,8 @@
 通过torch.autocast 对选定的区域进行自动类型转换，以提高性能同时保持准确性。前向传播时，使用低精度计算（float16），而反向传播计算梯度时，采用float32。
 torch.amp.GradScaler 有助于方便地执行梯度缩放步骤。梯度缩放通过最小化梯度下溢来提高使用 float16（在 CUDA 和 XPU 上默认为此类型）梯度的网络的收敛性。
 例如下面代码展示了如何使用autocast，自动类型转换：
+import torch.amp.GradScaler
+import torch.autocast
 # Creates model and optimizer in default precision
 model = Net().cuda()
 optimizer = optim.SGD(model.parameters(), ...)
