@@ -1,21 +1,22 @@
 ## PyTorch的自动微分机制
-torch.autograd 是 PyTorch 的自动微分引擎，为神经网络训练提供支持。它基于计算图(Computational Graph)​​ 和动态追踪(Dynamic Tracing)​​ 构建：
-PyTorch自动微分机制详解
-PyTorch的自动微分系统(Autograd)是其核心功能，使神经网络的训练变得高效简洁。我将从原理到实践全面解释这一机制：
+torch.autograd 是 PyTorch 的自动微分引擎，为神经网络训练提供支持。它通过构建一个计算图来跟踪操作。
+这个图是一个有向无环图（DAG），它记录了创建最终输出 Tensor 所涉及的所有操作。
+当一个Tensor 被操作并生成新的Tensor时，PyTorch会自动构建一个表示这个操作的计算图节点。
+
+PyTorch的自动微分系统(Autograd)是其核心功能，使神经网络的训练变得高效简洁。下面从原理到实践全面解释这一机制：
 
 1. 张量与梯度传播
-每个张量(tensor)包含：
 
+每个张量(tensor)包含：
 ​data​：原始数值
 ​grad​：梯度值
 ​grad_fn​：创建此张量的函数引用
 ​is_leaf​：是否是叶子节点（用户创建而非操作结果）
 ​requires_grad​：是否需要计算梯度
 
-import torch
-
+'''代码示例'''
 # 创建需要跟踪梯度的张量
-x = torch.tensor([1.0], requires_grad=True)
+x = torch.tensor([1.0], requires_grad=False)
 w = torch.tensor([2.0], requires_grad=True)
 b = torch.tensor([0.5], requires_grad=True)
 
@@ -34,8 +35,15 @@ print(f"z: grad_fn={z.grad_fn}")  # 输出: <AddBackward0 at 0x...>
 print(f"loss: grad_fn={loss.grad_fn}")  # 输出: <PowBackward0 at 0x...>
 
 x → Mul → y → Add → z → Pow → loss
-       ↗         ↗
-      w         b
+  ↗         ↗
+w          b
+
+y是由tensor w和x相乘所得，那么autograd会自动构建一个反向计算图，节点是乘法的导数，输入为关于y的梯度，输出为x和w的梯度：
+根据乘法求导公式dy/dx = w, dy/dw = x
+y.grad = delta_y 
+x.grad = delta_y * dy/dx = delta_y * w
+w.grad = delta_y * dy/dw = delta_y * x
+注：delta_y是y后续操作节点及输出对y的梯度
 
 3. 反向传播自动求导
 调用.backward()触发反向传播：
